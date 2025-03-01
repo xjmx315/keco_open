@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+
+{% block extra_js %}
+{% load static %}
+        <script src="{% static "adminpage/group-list.js" %}"></script>
+        <script src="{% static "adminpage/substance-list.js" %}"></script>
+        <script src="{% static "adminpage/crawler-list.js" %}"></script>
+        <script src="{% static "adminpage/crawler-details.js" %}"></script>
+        <script src="{% static "adminpage/all-crawler-details.js" %}"></script>
+        <script src="{% static "adminpage/progress-bar.js" %}"></script>
+        <script src="{% static "devpage/data.js" %}"></script>
+        <script src="{% static "adminpage/util.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+{# 물질 그룹 목록과 물질 목록 #}
+<div class="row align-items-start border bg-light rounded-3 my-margin-x">
+    {# 그룹 등록 modal #}
+    <div class="modal fade" id="modal-register-substance-group" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="label-group-title">물질 그룹 등록</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {# 파일 업로드 폼 #}
+            <form id="form-register-substance-group" action="" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              {# 업로드 파일 #}
+              <div class="mb-3">
+                <label for="group-upload" class="col-form-label">크롤링를 위해 등록할 물질들이 담긴 엑셀 파일을 선택해주세요.</label>
+                <input id="group-upload" class="form-control" type="file" name="group_file" tabindex="-1" accept=".xls,.xlsx" data-class-button="btn btn-default" >
+              </div>
+              {# 취소/등록 버튼 #}
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <input type="submit" value="등록" class="btn btn-primary" id="btn-register-substance-group"/>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {# 크롤링 파일 업로드 modal #}
+    <div class="modal fade" id="modal-upload-crawling" tabindex="-1" aria-labelledby="label-crawling-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="label-crawling-title">크롤링 파일 업로드</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            {# 파일 업로드 폼 #}
+            <form id="form-upload-crawling" action="" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              {# 업로드 파일 #}
+              <div class="mb-3">
+                <label for="crawling-upload" class="col-form-label">수동으로 크롤링한 데이터를 기록한 파일(엑셀)을 선택해주세요.</label>
+                <input id="crawling-upload" class="form-control" type="file" name="crawling_file" tabindex="-1" accept=".xls,.xlsx" data-class-button="btn btn-default" >
+              </div>
+              {# 취소/등록 버튼 #}
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <input type="submit" value="등록" class="btn btn-primary" id="btn-upload-crawling"/>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 그룹 추가/수정/삭제 modal #}
+    <div class="modal fade" id="modal-group-manage" tabindex="-1" aria-labelledby="label-group-manage-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="label-group-manage-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-group-manage" action="" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="group-manage-mode" name="mode">
+              <input type="hidden" id="group-manage-id" name="group_id">
+              <div id="group-name-input-area" class="mb-3">
+                <label for="group-manage-name" class="col-form-label">그룹명:</label>
+                <input type="text" class="form-control border border-primary border-2" id="group-manage-name" name="group_name">
+              </div>
+              <div id="group-delete-message" class="mb-3" style="display:none;">
+                <p>선택한 그룹을 삭제하시겠습니까?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" id="group-manage-submit" class="btn"></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 물질 추가/수정/삭제 modal #}
+    <div class="modal fade" id="modal-substance-manage" tabindex="-1" aria-labelledby="label-substance-manage-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="label-substance-manage-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-substance-manage" action="" method="post">
+              {% csrf_token %}
+              <input type="hidden" id="substance-manage-mode" name="mode">
+              <input type="hidden" id="substance-manage-cas" name="substance_cas">
+              <div id="substance-info-input-area" class="mb-3">
+                <label for="substance-manage-cas-no" class="col-form-label">CAS No:</label>
+                <input type="text" class="form-control border border-primary border-2" id="substance-manage-cas-no" name="substance_cas_no">
+                <label for="substance-manage-name" class="col-form-label">물질명:</label>
+                <input type="text" class="form-control border border-primary border-2" id="substance-manage-name" name="substance_name">
+              </div>
+              <div id="substance-delete-message" class="mb-3" style="display:none;">
+                <p>선택한 물질을 삭제하시겠습니까?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" id="substance-manage-submit" class="btn"></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 엑셀 파일 업로드 modal #}
+    <div class="modal fade" id="modal-excel-upload" tabindex="-1" aria-labelledby="label-excel-upload-title" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="label-excel-upload-title">엑셀 파일 업로드</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-excel-upload" action="" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="excel-file" class="form-label">그룹 : <span id="selected-group-name"></span></label>
+                <input class="form-control border border-primary border-2" type="file" id="excel-file" name="excel_file" accept=".xlsx, .xls">
+                <div class="form-text">* .xlsx, .xls 파일만 업로드 가능합니다.</div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="submit" class="btn btn-primary">업로드</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 그룹 리스트 place holder #}
+    <div class="col-md-6" style="margin:10pt 0pt 10pt">
+        <h5 class="d-flex justify-content-center align-items-center mb-2 bg-success">
+            <span class="text-light">그룹 리스트</span>
+        </h5>
+        <div class="h-100 bg-white border rounded-3" style="padding:10pt 20pt">
+            <div class="d-flex justify-content-end mb-2">
+                <button id="btn-add-group" type="button" class="btn btn-primary btn-sm me-2">추가</button>
+                <button id="btn-update-group" type="button" class="btn btn-warning btn-sm me-2">수정</button>
+                <button id="btn-delete-group" type="button" class="btn btn-danger btn-sm">삭제</button>
+            </div>
+            <div id='group-list' class="ht-box"></div>
+            <h5 class="d-flex justify-content-end mb-2">
+              <button id="btn-download-excel" type="button" class="btn btn-primary btn-sm mt-1">엑셀 다운로드</button>
+            </h5>
+        </div>
+    </div>
+
+    {# 물질 리스트 place holder #}
+    <div class="col-md-6" style="margin:10pt 0pt 10pt">
+        <h5 class="d-flex justify-content-center align-items-center mb-2 bg-success">
+            <span class="text-light">물질 리스트</span>
+        </h5>
+        <div class="h-100 bg-white border rounded-3" style="padding:10pt 20pt">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-primary">그룹명: <span id="current-group-name" class="badge bg-body fs-7">#</span></span>
+                <div>
+                    <button id="btn-upload-excel" type="button" class="btn btn-primary btn-sm me-4">엑셀 업로드</button>
+                    <button id="btn-add-substance" type="button" class="btn btn-primary btn-sm me-2">추가</button>
+                    <button id="btn-update-substance" type="button" class="btn btn-warning btn-sm me-2">수정</button>
+                    <button id="btn-delete-substance" type="button" class="btn btn-danger btn-sm">삭제</button>
+                </div>
+            </div>
+            <div id='substance-list' class="ht-box"></div>
+            <h5 class="d-flex justify-content-end mb-2">
+              <button id="btn-crawling" type="button" class="btn btn-primary btn-sm mt-1">크롤링하기</button>
+            </h5>
+        </div>
+    </div>
+</div>
+
+{# 프로그래스 UI #}
+<div id="progress-section" class="row align-items-md-stretch border bg-secondary bg-opacity-25 rounded-3 mt-3 my-margin-x" style="display:none;">
+    <div class="d-flex align-items-center" style="margin-top:7pt; margin-bottom:15pt;">
+      <h4 class="mb-0" style="margin-right:15pt;">그룹 :
+        <span id="crawling-group-name" class="badge bg-success bg-opacity-75 fs-6"></span>
+      </h4>
+      <h4 class="me-4 mb-0">크롤링 진행 상태 :
+        <span id="crawling-state-title" class="badge bg-success bg-opacity-75 fs-6" style="min-width: 120px; text-align: left;">idle</span>
+      </h4>
+    </div>
+    <h6 class="d-flex">
+        <div class="me-4" style="min-width: 150px;">
+            <span class="badge bg-success bg-opacity-75 fs-6">진행률:</span>
+            <span id="crawling-percentage" class="fw-bold fs-6">0% (00/100)</span>
+        </div>
+        <div class="me-4" style="min-width: 120px;">
+            <span class="badge bg-success bg-opacity-75 fs-6">물질수:</span>
+            <span id="substance-count" class="fw-bold fs-6">0</span>
+        </div>
+        <div class="me-4" style="min-width: 120px;">
+            <span class="badge bg-success bg-opacity-75 fs-6">크롤러:</span>
+            <span id="crawler-count" class="fw-bold fs-6">0</span>
+        </div>
+        <div style="min-width: 180px;">
+            <span class="badge bg-success bg-opacity-75 fs-6">경과 시간:</span>
+            <span id="crawling-elapsed-time" class="fw-bold fs-6">00:00</span>
+        </div>
+        <div style="min-width: 180px;">
+            <span id="error-crawlers" class="fw-bold fs-6"></span>
+        </div>
+    </h6>
+    <div class="col-md-12" style="margin:10pt 0pt 10pt">
+       <div class="progress">
+          <div id="crawling-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 25%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+       </div>
+    </div>
+</div>
+
+
+<div id="crawler-list-place-holder" class="row align-items-md-stretch border bg-light rounded-3 mt-3 my-margin-x">
+    {# 크롤링 모니터링 place holder #}
+    <div class="col-md-12" style="margin:10pt 0pt 10pt">
+        <div class="h-100 bg-secondary bg-opacity-25 border rounded-3" style="padding:10pt 20pt">
+            <h5 class="d-flex justify-content-center align-items-center mb-2 bg-success">
+                <span class="text-light">크롤링 모니터링</span>
+            </h5>
+            <div id='crawler-list' class="ht-box"></div>
+        </div>
+    </div>
+</div>
+
+<div id="crawler-details-place-holder" class="row align-items-md-stretch border bg-light rounded-3 mt-3 my-margin-x">
+  {# 크롤러 디테일 place holder #}
+  <div class="col-md-12" style="margin:10pt 0pt 10pt">
+      <div class="h-100 bg-secondary bg-opacity-25 border rounded-3" style="padding:10pt 20pt">
+          <h5 class="d-flex justify-content-center align-items-center mb-2 bg-success">
+              <span class="text-light">크롤러 상세 정보</span>
+          </h5>
+          <span class="text-primary">크롤러: <span id="current-crawler-name" class="badge bg-body fs-7">#</span></span>
+          <div id='crawler-details', class="ht-box"></div>
+      </div>
+  </div>
+</div>
+
+{# 크롤러 종합 디테일 plach hoder #}
+<div id = "all-crawler-details-place-hoder" class="row align-items-md-stretch border bg-light rounded-3 mt-3 my-margin-x">
+  {# <div class="col-md-12" style="margin:10pt 0pt 10pt"> #}
+    <div id = "all-crawler-details">
+      {# n개의 표 동적 생성 #}
+    </div>
+  {# </div> #}
+</div>
+
+<script>
+    const g_csrf_token    = "{{ csrf_token }}";
+    
+    //GroupList.set_group_list({{ group_list|safe }});
+    GroupList.fetch_and_display_data();
+
+    CrawlerList.fetch_and_display_state();
+
+    AllCrawlerDetails.fetch_and_display_state();
+
+    //let first_group_id = GroupList.get_first_group_id(); //비동기 처리로 인해 null값 반환. 
+    //-> group-list.js에서 _init()이 끝난 뒤에 실행하도록 함. 
+    //SubstanceList.fetch_and_display_data(first_group_id);
+
+    //let first_group_name = GroupList.get_group_name(first_group_id);
+    //$('#current-group-name').text(first_group_name);
+    //$('#selected-group-name').text(first_group_name);
+    ProgressBar.fetch_and_display_state();
+</script>
+{% endblock %}
